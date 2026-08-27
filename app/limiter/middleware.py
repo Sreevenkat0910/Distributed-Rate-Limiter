@@ -3,14 +3,26 @@ import math
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp
 
 from app.limiter import store
 from app.limiter.policies import ROUTE_POLICIES
+from app.limiter.policy import RateLimitPolicy
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(
+        self,
+        app: ASGIApp,
+        policies: dict[tuple[str, str], RateLimitPolicy] | None = None,
+    ) -> None:
+        super().__init__(app)
+        # Overridable so tests can swap in a short-window policy without
+        # touching the real route table; defaults to the app's real policies.
+        self.policies = ROUTE_POLICIES if policies is None else policies
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        policy = ROUTE_POLICIES.get((request.method, request.url.path))
+        policy = self.policies.get((request.method, request.url.path))
         if policy is None:
             return await call_next(request)
 
