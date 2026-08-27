@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -8,21 +9,28 @@ from app.api.search import router as search_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.limiter.middleware import RateLimitMiddleware
+from app.limiter.redis_store import RedisSlidingWindowStore
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-app = FastAPI(title="Distributed Rate Limiter")
+rate_limit_store = RedisSlidingWindowStore(settings.redis_url)
 
-app.add_middleware(RateLimitMiddleware)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await rate_limit_store.connect()
+    logger.info("app_startup env=%s", settings.app_env)
+    yield
+    await rate_limit_store.close()
+
+
+app = FastAPI(title="Distributed Rate Limiter", lifespan=lifespan)
+
+app.add_middleware(RateLimitMiddleware, store=rate_limit_store)
 
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(search_router)
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    logger.info("app_startup env=%s", settings.app_env)

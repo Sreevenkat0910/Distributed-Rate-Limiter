@@ -5,18 +5,20 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
-from app.limiter import store
 from app.limiter.policies import ROUTE_POLICIES
 from app.limiter.policy import RateLimitPolicy
+from app.limiter.redis_store import RedisSlidingWindowStore
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
+        store: RedisSlidingWindowStore,
         policies: dict[tuple[str, str], RateLimitPolicy] | None = None,
     ) -> None:
         super().__init__(app)
+        self.store = store
         # Overridable so tests can swap in a short-window policy without
         # touching the real route table; defaults to the app's real policies.
         self.policies = ROUTE_POLICIES if policies is None else policies
@@ -27,7 +29,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         key = policy.key_func(request)
-        decision = store.check(policy.name, key, policy.limit, policy.window_seconds)
+        decision = await self.store.check(policy.name, key, policy.limit, policy.window_seconds)
 
         headers = {
             "X-RateLimit-Limit": str(decision.limit),
