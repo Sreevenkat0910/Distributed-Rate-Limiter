@@ -1,0 +1,14 @@
+redis-1  | 1:signal-handler (1787841381) Received SIGTERM scheduling shutdown...
+redis-1  | 1:M 27 Aug 2026 14:36:21.667 * User requested shutdown...
+redis-1  | 1:M 27 Aug 2026 14:36:42.107 * Ready to accept connections tcp
+app3-1   | {"timestamp": "2026-08-27T14:36:21.694276+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=closed to=open fail_counter=5"}
+app2-1   | {"timestamp": "2026-08-27T14:36:21.692473+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=closed to=open fail_counter=5"}
+app1-1   | {"timestamp": "2026-08-27T14:36:21.696268+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=closed to=open fail_counter=5"}
+app1-1   | {"timestamp": "2026-08-27T14:36:51.698192+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=open to=half-open fail_counter=5"}
+app1-1   | {"timestamp": "2026-08-27T14:36:51.702418+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=half-open to=closed fail_counter=0"}
+app3-1   | {"timestamp": "2026-08-27T14:36:51.696237+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=open to=half-open fail_counter=5"}
+app3-1   | {"timestamp": "2026-08-27T14:36:51.702817+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=half-open to=open fail_counter=6"}
+app3-1   | {"timestamp": "2026-08-27T14:36:51.702976+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=open to=closed fail_counter=0"}
+app2-1   | {"timestamp": "2026-08-27T14:36:51.694616+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=open to=half-open fail_counter=5"}
+app2-1   | {"timestamp": "2026-08-27T14:36:51.702664+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=half-open to=closed fail_counter=0"}
+app2-1   | {"timestamp": "2026-08-27T14:36:51.704091+00:00", "level": "WARNING", "logger": "app.limiter.circuit_breaker", "message": "circuit_breaker_state_change breaker=redis_rate_limiter from=closed to=closed fail_counter=0"}

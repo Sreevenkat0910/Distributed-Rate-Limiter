@@ -1,0 +1,24 @@
+{
+  "source": "derived from loadtest/degradation-metrics.jsonl (raw --out json= time series, not kept -- 194MB, exceeds github file size limits, regenerable via loadtest/run_degradation_test.py)",
+  "phases": {
+    "test_start": "2026-08-27T14:24:00.381665+00:00",
+    "inject_at": "2026-08-27T14:24:45.388432+00:00",
+    "remove_at": "2026-08-27T14:25:05.398217+00:00",
+    "test_end": "2026-08-27T14:26:00.992701+00:00",
+    "toxic_latency_ms": 1200
+  },
+  "total_requests": 45000,
+  "status_distribution": {
+    "200": 22380,
+    "429": 22620
+  },
+  "degraded_fail_open_responses": 12588,
+  "degraded_fail_open_pct": 27.97,
+  "http_req_duration_ms": {
+    "min": 0.542,
+    "p50": 0.907,
+    "p95": 2.932,
+    "p99": 12.189,
+    "max": 78.778
+  }
+}

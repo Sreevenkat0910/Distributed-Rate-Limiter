@@ -1,0 +1,157 @@
+{
+    "metrics": {
+        "replica_app1_requests": {
+            "rate": 124.93048804146818,
+            "count": 14992
+        },
+        "vus": {
+            "min": 0,
+            "max": 21,
+            "value": 0
+        },
+        "http_req_connecting": {
+            "max": 0.535,
+            "avg": 0.00037401338461880515,
+            "min": 0,
+            "med": 0,
+            "p(50)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "http_req_waiting": {
+            "avg": 1.6200487360206401,
+            "min": 0.406,
+            "med": 1.2,
+            "p(50)": 1.2,
+            "p(95)": 2.614199999999998,
+            "p(99)": 10.667,
+            "max": 129.315
+        },
+        "http_req_blocked": {
+            "max": 14.166,
+            "avg": 0.006286190719698744,
+            "min": 0,
+            "med": 0.004,
+            "p(50)": 0.004,
+            "p(95)": 0.009,
+            "p(99)": 0.019
+        },
+        "checks": {
+            "passes": 44977,
+            "fails": 0,
+            "value": 1
+        },
+        "vus_max": {
+            "value": 54,
+            "min": 50,
+            "max": 54
+        },
+        "http_req_receiving": {
+            "p(99)": 0.125,
+            "max": 4.218,
+            "avg": 0.03507959623807507,
+            "min": 0.005,
+            "med": 0.031,
+            "p(50)": 0.031,
+            "p(95)": 0.068
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 44977,
+            "value": 0
+        },
+        "replica_app3_requests": {
+            "count": 14993,
+            "rate": 124.93882118501418
+        },
+        "http_req_sending": {
+            "p(99)": 0.056,
+            "max": 12.348,
+            "avg": 0.01690306156479841,
+            "min": 0.001,
+            "med": 0.013,
+            "p(50)": 0.013,
+            "p(95)": 0.027
+        },
+        "iteration_duration": {
+            "p(50)": 1.335084,
+            "p(95)": 2.9050914,
+            "p(99)": 10.96119008,
+            "max": 130.492167,
+            "avg": 1.7908258302243678,
+            "min": 0.467209,
+            "med": 1.335084
+        },
+        "iterations": {
+            "count": 44977,
+            "rate": 374.7997972679505
+        },
+        "http_req_duration{expected_response:true}": {
+            "med": 1.242,
+            "p(50)": 1.242,
+            "p(95)": 2.701,
+            "p(99)": 10.828919999999997,
+            "max": 129.496,
+            "avg": 1.6720313938235032,
+            "min": 0.43
+        },
+        "http_req_tls_handshaking": {
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "p(50)": 0,
+            "p(95)": 0
+        },
+        "http_req_duration": {
+            "p(99)": 10.828919999999997,
+            "max": 129.496,
+            "avg": 1.6720313938235032,
+            "min": 0.43,
+            "med": 1.242,
+            "p(50)": 1.242,
+            "p(95)": 2.701
+        },
+        "rate_limited_responses": {
+            "passes": 0,
+            "fails": 44977,
+            "value": 0
+        },
+        "replica_app2_requests": {
+            "count": 14992,
+            "rate": 124.93048804146818
+        },
+        "data_received": {
+            "count": 11863164,
+            "rate": 98857.44852160991
+        },
+        "data_sent": {
+            "count": 4531913,
+            "rate": 37765.08156693398
+        },
+        "dropped_iterations": {
+            "count": 22,
+            "rate": 0.1833291580117596
+        },
+        "http_reqs": {
+            "count": 44977,
+            "rate": 374.7997972679505
+        }
+    },
+    "root_group": {
+        "checks": {
+            "status is 200 or 429": {
+                "id": "66b4fc05285fc67bfe6d7a6e21342225",
+                "passes": 44977,
+                "fails": 0,
+                "name": "status is 200 or 429",
+                "path": "::status is 200 or 429"
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    }
+}

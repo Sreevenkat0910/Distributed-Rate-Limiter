@@ -22,3 +22,8 @@ htmlcov/
 loadtest/results-*.json
 loadtest/degradation-metrics.jsonl
 loadtest/degradation-phases.json
+loadtest/degradation-chart.png
+loadtest/outage-metrics.jsonl
+loadtest/outage-phases.json
+loadtest/outage-summary.json
+loadtest/outage-chart.png
