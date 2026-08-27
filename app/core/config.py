@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     redis_url: str = "redis://localhost:6379/0"
+    redis_max_connections: int = 200
 
     host: str = "0.0.0.0"
     port: int = 8000

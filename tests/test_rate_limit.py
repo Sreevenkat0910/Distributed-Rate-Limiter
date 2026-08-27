@@ -63,7 +63,8 @@ def test_limit_resets_after_window_elapses():
             key_func=client_ip_key,
         )
     }
-    store = RedisSlidingWindowStore(get_settings().redis_url)
+    settings = get_settings()
+    store = RedisSlidingWindowStore(settings.redis_url, max_connections=settings.redis_max_connections)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

@@ -64,13 +64,18 @@ class RedisSlidingWindowStore:
     GET followed by a separate INCR from Python.
     """
 
-    def __init__(self, redis_url: str) -> None:
+    def __init__(self, redis_url: str, max_connections: int = 200) -> None:
         self._redis_url = redis_url
+        self._max_connections = max_connections
         self._redis: redis.Redis | None = None
         self._script: AsyncScript | None = None
 
     async def connect(self) -> None:
-        self._redis = redis.from_url(self._redis_url, decode_responses=True)
+        self._redis = redis.from_url(
+            self._redis_url,
+            decode_responses=True,
+            max_connections=self._max_connections,
+        )
         self._script = self._redis.register_script(SLIDING_WINDOW_LUA)
 
     async def close(self) -> None:
