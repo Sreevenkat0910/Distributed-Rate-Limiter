@@ -20,3 +20,5 @@ htmlcov/
 .serena/
 
 loadtest/results-*.json
+loadtest/degradation-metrics.jsonl
+loadtest/degradation-phases.json

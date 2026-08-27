@@ -15,17 +15,42 @@ services:
       timeout: 2s
       retries: 15
 
+  # Sits only between the app replicas and Redis -- nginx and client
+  # traffic never touch it. The apps' REDIS_URL points here instead of
+  # directly at redis:6379, so a latency/fault toxic added via the admin
+  # API (published to the host on 8474) affects real app-to-Redis calls
+  # without any app code changes.
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    command: ["-host=0.0.0.0", "-config=/etc/toxiproxy.json"]
+    volumes:
+      - ./toxiproxy.json:/etc/toxiproxy.json:ro
+    ports:
+      - "8474:8474"
+    depends_on:
+      redis:
+        condition: service_healthy
+    # No HEALTHCHECK here: the image is a scratch-style build with only
+    # the /toxiproxy binary -- no shell, no curl/wget/nc, nothing to
+    # build a CMD-based check out of. It's a lightweight Go binary that
+    # starts near-instantly, and anything that needs it ready (the load
+    # test's fault-injection controller) polls its admin API itself
+    # before proceeding, which gives the same real-readiness guarantee.
+
   app1:
     build:
       context: ..
       dockerfile: infra/Dockerfile
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://toxiproxy:26379/0
       REPLICA_ID: app1
       RATE_LIMITER_ENABLED: ${RATE_LIMITER_ENABLED:-true}
+      BREAKER_RESET_TIMEOUT_SECONDS: ${BREAKER_RESET_TIMEOUT_SECONDS:-30}
     depends_on:
       redis:
         condition: service_healthy
+      toxiproxy:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 3s
@@ -37,12 +62,15 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://toxiproxy:26379/0
       REPLICA_ID: app2
       RATE_LIMITER_ENABLED: ${RATE_LIMITER_ENABLED:-true}
+      BREAKER_RESET_TIMEOUT_SECONDS: ${BREAKER_RESET_TIMEOUT_SECONDS:-30}
     depends_on:
       redis:
         condition: service_healthy
+      toxiproxy:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 3s
@@ -54,12 +82,15 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://toxiproxy:26379/0
       REPLICA_ID: app3
       RATE_LIMITER_ENABLED: ${RATE_LIMITER_ENABLED:-true}
+      BREAKER_RESET_TIMEOUT_SECONDS: ${BREAKER_RESET_TIMEOUT_SECONDS:-30}
     depends_on:
       redis:
         condition: service_healthy
+      toxiproxy:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 3s
