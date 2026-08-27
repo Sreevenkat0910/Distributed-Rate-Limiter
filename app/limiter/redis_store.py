@@ -3,8 +3,11 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
+import pybreaker
 import redis.asyncio as redis
 from redis.commands.core import AsyncScript
+
+from app.limiter.circuit_breaker import AsyncCircuitBreaker, LoggingListener
 
 # KEYS[1] = current fixed-window counter key
 # KEYS[2] = previous fixed-window counter key
@@ -56,26 +59,72 @@ class RateLimitDecision:
     retry_after: float | None
 
 
+class RateLimiterUnavailableError(Exception):
+    """Raised when the Redis-backed check couldn't complete -- the circuit
+    breaker is open, or the call itself timed out. Callers (the middleware)
+    are expected to treat this uniformly as "can't determine the rate
+    limit right now"; per-cause fail-open/fail-closed policy is layered on
+    top of this, not decided here."""
+
+
 class RedisSlidingWindowStore:
     """Sliding-window-counter rate limiter backed by Redis.
 
     The check-and-increment is a single atomic Lua script call (registered
     once via `register_script`, cached server-side) — never a separate
-    GET followed by a separate INCR from Python.
+    GET followed by a separate INCR from Python. The call is wrapped in a
+    circuit breaker with a hard timeout so a degraded Redis can't stall
+    every request behind it.
     """
 
-    def __init__(self, redis_url: str, max_connections: int = 200) -> None:
+    def __init__(
+        self,
+        redis_url: str,
+        max_connections: int = 50,
+        call_timeout_ms: int = 75,
+        breaker_fail_max: int = 5,
+        breaker_reset_timeout_seconds: float = 30,
+    ) -> None:
         self._redis_url = redis_url
         self._max_connections = max_connections
+        self._call_timeout_seconds = call_timeout_ms / 1000
         self._redis: redis.Redis | None = None
         self._script: AsyncScript | None = None
 
+        breaker = pybreaker.CircuitBreaker(
+            fail_max=breaker_fail_max,
+            reset_timeout=breaker_reset_timeout_seconds,
+            listeners=[LoggingListener()],
+            name="redis_rate_limiter",
+        )
+        self._circuit_breaker = AsyncCircuitBreaker(breaker, self._call_timeout_seconds)
+
     async def connect(self) -> None:
-        self._redis = redis.from_url(
+        # BlockingConnectionPool, not the default (non-blocking) pool: with
+        # the default pool, a burst of concurrent callers beyond
+        # max_connections either raises MaxConnectionsError immediately, or
+        # (if max_connections is set high enough to avoid that) forces that
+        # many *simultaneous fresh TCP connections*, which -- measured
+        # directly -- can itself take well over this store's 75ms call
+        # timeout under real concurrency (asyncio's DNS-resolution thread
+        # pool becomes the bottleneck, not Redis). With a bounded pool,
+        # excess callers instead queue briefly for a connection to free up;
+        # that queue wait is still fully covered by the asyncio.wait_for in
+        # AsyncCircuitBreaker.call(), which cancels the whole operation --
+        # queueing included -- at the configured timeout regardless of the
+        # pool's own (much more generous) default wait.
+        pool = redis.BlockingConnectionPool.from_url(
             self._redis_url,
             decode_responses=True,
             max_connections=self._max_connections,
+            # The client-level socket bound -- not just the asyncio.wait_for
+            # wrapper in AsyncCircuitBreaker.call() -- so a hung/slow socket
+            # can't sit past the configured timeout regardless of how it's
+            # awaited.
+            socket_timeout=self._call_timeout_seconds,
+            socket_connect_timeout=self._call_timeout_seconds,
         )
+        self._redis = redis.Redis(connection_pool=pool)
         self._script = self._redis.register_script(SLIDING_WINDOW_LUA)
 
     async def close(self) -> None:
@@ -93,10 +142,18 @@ class RedisSlidingWindowStore:
         current_key = f"rl:{policy_name}:{key}:{window_index}"
         previous_key = f"rl:{policy_name}:{key}:{window_index - 1}"
 
-        allowed, out_limit, remaining, reset_at = await self._script(
-            keys=[current_key, previous_key],
-            args=[limit, window_seconds, now],
-        )
+        try:
+            allowed, out_limit, remaining, reset_at = await self._circuit_breaker.call(
+                self._script,
+                keys=[current_key, previous_key],
+                args=[limit, window_seconds, now],
+            )
+        except Exception as exc:
+            # Deliberately broad: at this phase, breaker-open, a timed-out
+            # call, and a connection failure are all handled identically
+            # (a 503 from the middleware) -- distinguishing them belongs to
+            # the fail-open/fail-closed policy work, not here.
+            raise RateLimiterUnavailableError(str(exc)) from exc
 
         reset_at = float(reset_at)
         if allowed:

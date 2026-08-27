@@ -7,7 +7,7 @@ from starlette.types import ASGIApp
 
 from app.limiter.policies import ROUTE_POLICIES
 from app.limiter.policy import RateLimitPolicy
-from app.limiter.redis_store import RedisSlidingWindowStore
+from app.limiter.redis_store import RateLimiterUnavailableError, RedisSlidingWindowStore
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -29,7 +29,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         key = policy.key_func(request)
-        decision = await self.store.check(policy.name, key, policy.limit, policy.window_seconds)
+        try:
+            decision = await self.store.check(policy.name, key, policy.limit, policy.window_seconds)
+        except RateLimiterUnavailableError:
+            # Placeholder for this phase: breaker-open and call-timeout both
+            # just fail generically. The fail-open/fail-closed policy split
+            # is deliberately not here yet.
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Rate limiter temporarily unavailable. Try again shortly."},
+            )
 
         headers = {
             "X-RateLimit-Limit": str(decision.limit),

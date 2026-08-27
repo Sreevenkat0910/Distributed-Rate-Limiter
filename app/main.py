@@ -17,7 +17,13 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-rate_limit_store = RedisSlidingWindowStore(settings.redis_url, max_connections=settings.redis_max_connections)
+rate_limit_store = RedisSlidingWindowStore(
+    settings.redis_url,
+    max_connections=settings.redis_max_connections,
+    call_timeout_ms=settings.redis_call_timeout_ms,
+    breaker_fail_max=settings.breaker_fail_max,
+    breaker_reset_timeout_seconds=settings.breaker_reset_timeout_seconds,
+)
 
 
 @asynccontextmanager

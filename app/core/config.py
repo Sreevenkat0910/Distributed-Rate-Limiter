@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     redis_url: str = "redis://localhost:6379/0"
-    redis_max_connections: int = 200
+    redis_max_connections: int = 50
+    redis_call_timeout_ms: int = 75
+
+    breaker_fail_max: int = 5
+    breaker_reset_timeout_seconds: float = 30
 
     host: str = "0.0.0.0"
     port: int = 8000
