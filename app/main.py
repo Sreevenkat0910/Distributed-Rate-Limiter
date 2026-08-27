@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.health import router as health_router
 from app.api.search import router as search_router
@@ -29,6 +30,7 @@ rate_limit_store = RedisSlidingWindowStore(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await rate_limit_store.connect()
+    app.state.rate_limit_store = rate_limit_store
     logger.info("app_startup env=%s", settings.app_env)
     yield
     await rate_limit_store.close()
@@ -42,3 +44,4 @@ app.add_middleware(ReplicaIdMiddleware, replica_id=settings.replica_id)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(search_router)
+app.include_router(admin_router)

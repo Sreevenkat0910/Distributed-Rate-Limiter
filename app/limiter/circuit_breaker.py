@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Awaitable, Callable
 
 import pybreaker
@@ -50,7 +51,25 @@ class AsyncCircuitBreaker:
     def __init__(self, breaker: pybreaker.CircuitBreaker, call_timeout_seconds: float) -> None:
         self._breaker = breaker
         self._call_timeout_seconds = call_timeout_seconds
+        # Latency of the most recent attempt, success or failure -- read
+        # live by /admin/limiter-status, not cached/snapshotted.
+        self.last_latency_ms: float | None = None
+
+    @property
+    def current_state(self) -> str:
+        """Live breaker state ("closed"/"open"/"half-open"), read directly
+        off pybreaker's own tracked state -- never cached."""
+        return self._breaker.current_state
 
     async def call(self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
         with self._breaker.calling():
-            return await asyncio.wait_for(func(*args, **kwargs), timeout=self._call_timeout_seconds)
+            # Timed from inside the `with` block, not around it: when the
+            # breaker is open, entering `calling()` raises immediately
+            # without running this block at all -- last_latency_ms should
+            # keep the last *real* attempt's latency in that case, not get
+            # overwritten with a near-zero short-circuit time.
+            t0 = time.monotonic()
+            try:
+                return await asyncio.wait_for(func(*args, **kwargs), timeout=self._call_timeout_seconds)
+            finally:
+                self.last_latency_ms = (time.monotonic() - t0) * 1000

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Literal
 
 from starlette.requests import Request
+
+DegradedMode = Literal["fail_open", "fail_closed"]
 
 
 @dataclass(frozen=True)
@@ -12,6 +14,10 @@ class RateLimitPolicy:
     limit: int
     window_seconds: int
     key_func: Callable[[Request], str]
+    # What to do when the breaker is open or the Redis call times out.
+    # Set per-policy (not a global flag) so /login and /search can behave
+    # independently.
+    degraded_mode: DegradedMode = "fail_closed"
 
 
 def client_ip_key(request: Request) -> str:

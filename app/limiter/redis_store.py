@@ -133,6 +133,18 @@ class RedisSlidingWindowStore:
         self._redis = None
         self._script = None
 
+    @property
+    def circuit_breaker_state(self) -> str:
+        """Live state ("closed"/"open"/"half-open"), for logging and
+        /admin/limiter-status -- read straight off the breaker, not cached."""
+        return self._circuit_breaker.current_state
+
+    @property
+    def last_latency_ms(self) -> float | None:
+        """Latency of the most recent real Redis attempt (success or
+        failure); None if no attempt has been made yet."""
+        return self._circuit_breaker.last_latency_ms
+
     async def check(self, policy_name: str, key: str, limit: int, window_seconds: int) -> RateLimitDecision:
         if self._script is None:
             raise RuntimeError("RedisSlidingWindowStore.connect() was not called")
