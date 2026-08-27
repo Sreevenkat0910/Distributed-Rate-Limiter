@@ -1,0 +1,78 @@
+# Three named app services (app1/app2/app3) rather than a single service
+# with `deploy.replicas: 3`: with replicas, all containers share one
+# Compose-internal DNS name, and nginx's open-source upstream block
+# resolves hostnames once at startup with no re-resolution -- it can't
+# reliably enumerate multiple containers behind a single name for
+# round-robin. Three distinct services give nginx a fixed, explicit list
+# of three backends, and let each container get its own REPLICA_ID
+# trivially via its own `environment:` block.
+services:
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  app1:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REPLICA_ID: app1
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  app2:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REPLICA_ID: app2
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  app3:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REPLICA_ID: app3
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app1:
+        condition: service_healthy
+      app2:
+        condition: service_healthy
+      app3:
+        condition: service_healthy

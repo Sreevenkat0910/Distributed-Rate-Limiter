@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
+    replica_id: str = "unknown"
+
 
 @lru_cache
 def get_settings() -> Settings:
