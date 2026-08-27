@@ -18,3 +18,5 @@ htmlcov/
 .DS_Store
 
 .serena/
+
+loadtest/results-*.json

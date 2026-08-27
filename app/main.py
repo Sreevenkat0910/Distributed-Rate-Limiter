@@ -38,7 +38,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Distributed Rate Limiter", lifespan=lifespan)
 
-app.add_middleware(RateLimitMiddleware, store=rate_limit_store)
+if settings.rate_limiter_enabled:
+    app.add_middleware(RateLimitMiddleware, store=rate_limit_store)
 app.add_middleware(ReplicaIdMiddleware, replica_id=settings.replica_id)
 
 app.include_router(health_router)

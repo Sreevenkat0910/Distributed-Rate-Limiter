@@ -21,6 +21,12 @@ class Settings(BaseSettings):
 
     replica_id: str = "unknown"
 
+    # Benchmarking-only kill switch: when false, RateLimitMiddleware isn't
+    # added at all, so requests never touch Redis/the breaker. Lets a load
+    # test isolate the limiter's actual added latency, rather than the
+    # weaker proxy of "how much does an occasional 429 cost."
+    rate_limiter_enabled: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:
